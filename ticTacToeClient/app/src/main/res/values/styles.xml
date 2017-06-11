@@ -1,0 +1,22 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+        <style name="GameTile">
+            <item name="android:textSize">60sp</item>item>
+            <item name="android:layout_gravity">fill</item>item>
+            <item name="android:gravity">center</item>item>
+            <item name="android:fontFamily">Roboto-Thin</item>item>
+            <item name="android:background">@drawable/my_border</item>item>
+            <item name="android:layout_weight">1</item>item>
+            <item name="android:layout_width">0dp</item>item>
+            <item name="android:layout_height">wrap_content</item>item>
+        </style>
+
+</resources>

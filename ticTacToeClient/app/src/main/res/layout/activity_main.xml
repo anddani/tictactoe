@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TableRow>
+        <TextView
+            android:id="@+id/tile0"
+            style="@style/GameTile" />
+        <TextView
+            android:id="@+id/tile1"
+            style="@style/GameTile" />
+        <TextView
+            android:id="@+id/tile2"
+            style="@style/GameTile" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:id="@+id/tile3"
+            style="@style/GameTile" />
+        <TextView
+            android:id="@+id/tile4"
+            style="@style/GameTile" />
+        <TextView
+            android:id="@+id/tile5"
+            style="@style/GameTile" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:id="@+id/tile6"
+            style="@style/GameTile" />
+        <TextView
+            android:id="@+id/tile7"
+            style="@style/GameTile" />
+        <TextView
+            android:id="@+id/tile8"
+            style="@style/GameTile" />
+    </TableRow>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TextView
+            android:id="@+id/log"
+            android:padding="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </ScrollView>
+</TableLayout>
