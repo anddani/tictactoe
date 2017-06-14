@@ -2,9 +2,12 @@ package com.example.algo.tictactoe
 
 import android.util.Log
 
-class GameState (val board: List<String>, val log: String) {
+class GameState (val board: List<String>, val log: String = "") {
 
     val playerSymbol = "X"
+
+    constructor(stringBoard: String) : this(stringBoard.split(""))
+
 
     fun printLog() {
         Log.d("MyFilter", log)

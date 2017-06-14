@@ -3,12 +3,18 @@ package com.example.algo.tictactoe
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Html
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_main.*;
+import rx.Observable
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
+import java.util.*
 
 // TODO:
+//    - new function for create board, add to list and render
 //    - Add win state
 //    - Retrofit for api call
 //    - RxKotlin for async call
@@ -21,6 +27,9 @@ class MainActivity : AppCompatActivity() {
                                  R.id.tile6, R.id.tile7, R.id.tile8)
 
     var gameStates : ArrayList<GameState> = arrayListOf()
+    var cpuTurn : Boolean = false
+
+    val api = RestAPI()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,6 +44,10 @@ class MainActivity : AppCompatActivity() {
                 .forEach {
                     it.setOnTouchListener { view, event -> tilePressed(view, event) }
                 }
+
+        val testboard = "[[V,V,V],[V,V,V],[X,X,X]]"
+
+        log.append("")
     }
 
     fun tilePressed(view: View, event: MotionEvent) : Boolean {
@@ -54,6 +67,9 @@ class MainActivity : AppCompatActivity() {
 
             // Render game state
             renderGameState(gameStates.last())
+
+            // Opponent move
+            cpuMove()
         } else {
             // Show error message
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
@@ -71,5 +87,53 @@ class MainActivity : AppCompatActivity() {
         ids.map { findViewById(it) as TextView }
                 .zip(gameState.board.map { it.replace("V", "") }) { tv, s -> tv.setText(s) }
         log.append(gameState.log)
+    }
+
+    fun cpuMove() {
+        cpuTurn = true
+
+        val obs: Observable<String> = Observable.create {
+            subscriber ->
+            val callResponse = api.play(gameStates.last().board.toString())
+            val response = callResponse.execute()
+            response.body()
+            if (response.isSuccessful) {
+                val newState = response.body().board
+                subscriber.onNext(newState)
+                subscriber.onCompleted()
+            } else {
+                subscriber.onError(Throwable(response.message()))
+            }
+        }
+
+
+        obs.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        { cpuBoard ->
+                            Log.d("MyFilter", "board: ${cpuBoard}")
+
+                            val newBoard = cpuBoard.replace(Regex("[\",\\[\\]]"), "")
+                                    .split("")
+                                    .drop(1)
+                                    .dropLast(1)
+
+                            val newState = GameState(newBoard)
+                            log.append(newState.toString())
+
+                            // Add new game state to list of game states
+                            gameStates.add(newState)
+
+                            // Render game state
+                            renderGameState(gameStates.last())
+
+                            cpuTurn = false
+                        },
+                        { e ->
+                            Log.d("MyFilter", "Error: ${e}")
+                            cpuTurn = false
+                        }
+                )
+
     }
 }
