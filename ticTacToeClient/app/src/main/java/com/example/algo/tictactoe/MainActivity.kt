@@ -14,10 +14,8 @@ import rx.schedulers.Schedulers
 import java.util.*
 
 // TODO:
-//    - new function for create board, add to list and render
-//    - Add win state
-//    - Retrofit for api call
-//    - RxKotlin for async call
+//    - Have cpuTurn as an immutable variable in gameStates instead. If the last
+//      move was made by player, it is CPUs turn
 //    - Add undo/redo functionality
 
 class MainActivity : AppCompatActivity() {
@@ -26,7 +24,12 @@ class MainActivity : AppCompatActivity() {
                                  R.id.tile3, R.id.tile4, R.id.tile5,
                                  R.id.tile6, R.id.tile7, R.id.tile8)
 
-    var gameStates : ArrayList<GameState> = arrayListOf()
+    // Add initial state (empty) to list of states
+    val initialGameState = GameState(listOf("V", "V", "V",
+                                            "V", "V", "V",
+                                            "V", "V", "V"), "")
+
+    var gameStates : ArrayList<GameState> = arrayListOf(initialGameState)
     var cpuTurn : Boolean = false
 
     val api = RestAPI()
@@ -35,24 +38,24 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Add initial state (empty) to list of states
-        gameStates.add(GameState(listOf("V", "V", "V",
-                                        "V", "V", "V",
-                                        "V", "V", "V"), ""))
-
+        // Setup touchListners for each tile on the board
         ids.map { findViewById(it) as TextView }
                 .forEach {
                     it.setOnTouchListener { view, event -> tilePressed(view, event) }
                 }
-
-        val testboard = "[[V,V,V],[V,V,V],[X,X,X]]"
-
-        log.append("")
     }
 
     fun tilePressed(view: View, event: MotionEvent) : Boolean {
         // If event is not releasing button, return
-        if (event.action != MotionEvent.ACTION_UP) {
+        if (event.action != MotionEvent.ACTION_UP || cpuTurn) {
+            return true
+        }
+
+        // If game is over, reset game
+        if (gameStates.last().gameOver()) {
+            gameStates = arrayListOf(initialGameState)
+            log.setText("")
+            renderGameState(gameStates.last())
             return true
         }
 
@@ -60,27 +63,87 @@ class MainActivity : AppCompatActivity() {
         val previousState = gameStates.last()
         if (previousState.validMove(playerMove)) {
             // Create new game state
-            val gameState = GameState(previousState.makeMove(playerMove), "Player move: (${playerMove % 3}, ${playerMove / 3})\n")
+            val statusMessage = "Player move: (${playerMove % 3}, ${playerMove / 3})\n"
+            val newBoard = previousState.makeMove(playerMove)
 
-            // Add new game state to list of game states
-            gameStates.add(gameState)
+            // Make player move
+            addNewState(newBoard, statusMessage)
 
-            // Render game state
-            renderGameState(gameStates.last())
-
-            // Opponent move
-            cpuMove()
+            // Opponent move if game is not over
+            if (!gameStates.last().gameOver()) {
+                cpuMove()
+            }
         } else {
             // Show error message
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                log.append(Html.fromHtml("<font color=#ff0000>Not a valid move</font>", Html.FROM_HTML_MODE_LEGACY))
-            } else {
-                log.append(Html.fromHtml("<font color=#ff0000>Not a valid move</font>"))
-            }
-            log.append("\n")
+            coloredLogMessage("red", "Not a valid move")
         }
 
         return true
+    }
+
+    fun cpuMove() {
+        cpuTurn = true
+
+        val obs: Observable<TTTDataResponse> = Observable.create {
+            subscriber ->
+            val callResponse = api.play(gameStates.last().board.toString())
+            val response = callResponse.execute()
+            response.body()
+            if (response.isSuccessful) {
+                subscriber.onNext(response.body())
+                subscriber.onCompleted()
+            } else {
+                subscriber.onError(Throwable(response.message()))
+            }
+        }
+
+
+        obs.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        { cpuNewState ->
+                            val cpuBoard = cpuNewState.board
+                            Log.d("MyFilter", "board: ${cpuBoard}")
+
+                            // Convert response format to List<String>
+                            val newBoard = cpuBoard.replace(Regex("[\",\\[\\]]"), "")
+                                    .split("")
+                                    .drop(1)
+                                    .dropLast(1)
+
+                            val statusMessage = "CPU move: ${cpuNewState.move}\n"
+
+                            // Make CPU move
+                            addNewState(newBoard, statusMessage)
+
+                            cpuTurn = false
+                        },
+                        { e ->
+                            Log.d("MyFilter", "Error: ${e}")
+                            cpuTurn = false
+                        }
+                )
+
+    }
+
+    fun addNewState(newBoard: List<String>, statusMessage: String) {
+        val newState = GameState(newBoard, statusMessage)
+
+        // Add new game state to list of game states
+        gameStates.add(newState)
+
+        // Render game state
+        renderGameState(gameStates.last())
+
+        // If game over, show message
+        if (gameStates.last().gameOver()) {
+            val winner = gameStates.last().getWinner()
+            if (winner == "Tie") {
+                coloredLogMessage("blue", "A Tie!")
+            } else {
+                coloredLogMessage("green", "${gameStates.last().getWinner()} has won!")
+            }
+        }
     }
 
     fun renderGameState(gameState: GameState) {
@@ -92,51 +155,18 @@ class MainActivity : AppCompatActivity() {
         log.append(gameState.log)
     }
 
-    fun cpuMove() {
-        cpuTurn = true
-
-        val obs: Observable<String> = Observable.create {
-            subscriber ->
-            val callResponse = api.play(gameStates.last().board.toString())
-            val response = callResponse.execute()
-            response.body()
-            if (response.isSuccessful) {
-                val newState = response.body().board
-                subscriber.onNext(newState)
-                subscriber.onCompleted()
-            } else {
-                subscriber.onError(Throwable(response.message()))
-            }
+    fun coloredLogMessage(messageColor: String, message: String) {
+        val color = when {
+            messageColor.equals("red") -> "#ff0000"
+            messageColor.equals("green") -> "#00ff00"
+            messageColor.equals("blue") -> "#0000ff"
+            else -> "#000000"
         }
-
-
-        obs.subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        { cpuBoard ->
-                            Log.d("MyFilter", "board: ${cpuBoard}")
-
-                            val newBoard = cpuBoard.replace(Regex("[\",\\[\\]]"), "")
-                                    .split("")
-                                    .drop(1)
-                                    .dropLast(1)
-
-                            val newState = GameState(newBoard)
-                            log.append(newState.toString())
-
-                            // Add new game state to list of game states
-                            gameStates.add(newState)
-
-                            // Render game state
-                            renderGameState(gameStates.last())
-
-                            cpuTurn = false
-                        },
-                        { e ->
-                            Log.d("MyFilter", "Error: ${e}")
-                            cpuTurn = false
-                        }
-                )
-
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            log.append(Html.fromHtml("<font color=${color}>${message}</font>", Html.FROM_HTML_MODE_LEGACY))
+        } else {
+            log.append(Html.fromHtml("<font color=${color}>${message}</font>"))
+        }
+        log.append("\n")
     }
 }

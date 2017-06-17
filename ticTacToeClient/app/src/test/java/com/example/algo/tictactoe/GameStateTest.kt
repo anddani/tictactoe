@@ -67,7 +67,7 @@ class GameStateTest {
     @Test
     fun winner_isCorrect() {
         assertEquals("", gameState.getWinner())
-        assertEquals("X", gameOverState1.getWinner())
-        assertEquals("V", gameOverState2.getWinner())
+        assertEquals("Player", gameOverState1.getWinner())
+        assertEquals("Tie", gameOverState2.getWinner())
     }
 }

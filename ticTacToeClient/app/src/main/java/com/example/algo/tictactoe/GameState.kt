@@ -1,17 +1,8 @@
 package com.example.algo.tictactoe
 
-import android.util.Log
-
 class GameState (val board: List<String>, val log: String = "") {
 
     val playerSymbol = "X"
-
-    constructor(stringBoard: String) : this(stringBoard.split(""))
-
-
-    fun printLog() {
-        Log.d("MyFilter", log)
-    }
 
     fun makeMove(move: Int) : List<String> =
             board.take(move) + playerSymbol + board.drop(move+1)
@@ -24,9 +15,9 @@ class GameState (val board: List<String>, val log: String = "") {
 
     fun getWinner() : String =
         when {
-            maxCons('X') == 3 -> "X"
-            maxCons('O') == 3 -> "O"
-            board.indexOf("V") == -1 -> "V"
+            maxCons('X') == 3 -> "Player"
+            maxCons('O') == 3 -> "CPU"
+            board.indexOf("V") == -1 -> "Tie"
             else -> ""
         }
 

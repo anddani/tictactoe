@@ -10,7 +10,7 @@ class RestAPI {
     private val tttApi: TTTApi
     init {
         val retrofit = Retrofit.Builder()
-                .baseUrl("http://192.168.0.173:3000")
+                .baseUrl(Constants().URL)
                 .addConverterFactory(MoshiConverterFactory.create())
                 .build()
         tttApi = retrofit.create(TTTApi::class.java)
