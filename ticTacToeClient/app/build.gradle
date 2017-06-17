@@ -31,4 +31,10 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:25.4.0'
     testImplementation 'junit:junit:4.12'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+
+    compile "com.squareup.retrofit2:retrofit:2.0.0"
+    compile "com.squareup.retrofit2:converter-moshi:2.0.0"
+
+    compile "io.reactivex:rxjava:1.0.14"
+    compile 'io.reactivex:rxandroid:1.1.0'
 }
