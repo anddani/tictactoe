@@ -68,8 +68,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun renderGameState(gameState: GameState) {
+        // Render game board
         ids.map { findViewById(it) as TextView }
                 .zip(gameState.board.map { it.replace("V", "") }) { tv, s -> tv.setText(s) }
+
+        // Log last move
         log.append(gameState.log)
     }
 }
