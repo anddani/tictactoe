@@ -10,7 +10,7 @@ import GHC.Generics
 
 import qualified Data.Text.Lazy as TL
 
-data Response = Response { board :: String, winner :: Maybe Char, score :: Int} deriving (Show, Generic)
+data Response = Response { board :: String, winner :: Maybe Char, score :: Int, move :: String } deriving (Show, Generic)
 instance ToJSON Response
 instance FromJSON Response
 
@@ -104,7 +104,7 @@ play state =
         Move s move = bestMove
         nextState   = makeMove inputBoard 'O' move
         w           = getWinner nextState
-     in Response { board = show nextState, winner = w, score = s }
+     in Response { board = show nextState, winner = w, score = s, move = show move }
 
 main :: IO ()
 main = do
